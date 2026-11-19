@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mi letra a Arial</title>
+<meta name="theme-color" content="#2f6f5e">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f5f3ee;--card:#ffffff;--ink:#1f2933;--muted:#6b7280;--line:#e4e0d6;
+  --accent:#2f6f5e;--accent-soft:#e2efea;--warn:#a86512;--warn-soft:#fbf0dc;
+  --danger:#b42318;--danger-soft:#fdecea;--radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{display:flex;flex-direction:column;overscroll-behavior:none;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--card);
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:18px;margin:0 8px 0 0;font-weight:700;letter-spacing:-.01em}
+header h1 span{color:var(--accent);font-family:Arial,Helvetica,sans-serif}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 18px;font-size:16px;
+  cursor:pointer;color:var(--ink);touch-action:manipulation}
+.tab[aria-selected="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{flex:1;min-height:0;display:flex}
+.view{display:none;flex:1;min-height:0;min-width:0;padding:12px 16px;gap:12px}
+.view.active{display:flex}
+.col{flex-direction:column}
+.scroll{overflow-y:auto}
+button{font:inherit}
+.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;font-size:17px;
+  cursor:pointer;color:var(--ink);min-height:52px;touch-action:manipulation;user-select:none}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.danger{color:var(--danger);border-color:#f0c4be}
+.btn:disabled{opacity:.45}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+/* ---------- Escribir ---------- */
+.output-wrap{display:flex;gap:10px;align-items:stretch}
+.output{flex:1;min-height:96px;max-height:28vh;overflow-y:auto;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:44px;
+  line-height:1.25;white-space:pre-wrap;word-break:break-word}
+.output .ch{border-radius:6px;cursor:pointer;padding:0 1px}
+.output .ch.sel{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
+.output .ch.pop{animation:pop .45s ease}
+@keyframes pop{0%{background:#cfe7df}100%{background:transparent}}
+.output .caret{display:inline-block;width:3px;height:1em;background:var(--accent);vertical-align:-.12em;
+  margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.output .placeholder{color:#b8b3a7;font-size:22px;font-family:system-ui,sans-serif}
+.out-tools{display:flex;flex-direction:column;gap:6px}
+.out-tools .btn{min-height:44px;padding:6px 12px;font-size:16px}
+.chips-row{display:flex;align-items:center;gap:10px;min-height:58px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-width:58px;height:54px;border-radius:12px;border:1px solid var(--line);background:#fff;
+  font-family:Arial,Helvetica,sans-serif;font-size:30px;cursor:pointer;touch-action:manipulation}
+.chip.cur{background:var(--accent);color:#fff;border-color:var(--accent)}
+.work{flex:1;min-height:0;display:flex;gap:12px}
+.pad-wrap{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px}
+.pad-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;padding:10px 14px;font-size:16px;cursor:pointer;min-height:46px;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.pad{position:relative;flex:1;min-height:200px;background:#fff;border:2px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.pad canvas{position:absolute;inset:0;touch-action:none;display:block}
+.pad .guide{position:absolute;left:4%;right:4%;top:72%;border-top:2px dashed #ece8de;pointer-events:none}
+.pad-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c9c4b8;
+  font-size:22px;pointer-events:none;text-align:center;padding:20px}
+.pad-overlay{position:absolute;inset:0;display:none;flex-direction:column;gap:14px;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.94);text-align:center;padding:24px;font-size:18px}
+.pad-overlay.show{display:flex}
+.side{width:190px;display:flex;flex-direction:column;gap:8px}
+.side .btn{width:100%}
+.side .big{min-height:72px;font-size:20px}
+
+/* ---------- Enseñar ---------- */
+.teach-left{width:380px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.teach-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;min-height:0}
+.progress{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;font-size:15px}
+.bar{height:8px;background:#eee9df;border-radius:99px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;overflow-y:auto;min-height:0;flex:1;align-content:start}
+.lbtn{position:relative;height:60px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;
+  font-family:Arial,Helvetica,sans-serif;font-size:24px;touch-action:manipulation;color:var(--ink)}
+.lbtn .n{position:absolute;top:3px;right:5px;font-size:11px;font-family:system-ui,sans-serif;border-radius:99px;padding:1px 6px;background:#eee9df;color:var(--muted)}
+.lbtn.some .n{background:var(--warn-soft);color:var(--warn)}
+.lbtn.ok .n{background:var(--accent-soft);color:var(--accent)}
+.lbtn.sel{outline:3px solid var(--accent);outline-offset:-2px}
+.add-row{display:flex;gap:8px}
+.add-row input{flex:1;min-width:0;font-size:18px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.teach-head{display:flex;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:10px 16px}
+.target-letter{font-family:Arial,Helvetica,sans-serif;font-size:60px;line-height:1;min-width:110px;text-align:center}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1;min-width:130px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;min-height:70px;align-items:center}
+.thumb{position:relative;width:70px;height:70px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.thumb canvas{width:100%;height:100%;display:block}
+.thumb button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:1px solid #f0c4be;background:#fff;color:var(--danger);font-size:15px;cursor:pointer;padding:0;line-height:1}
+
+/* ---------- Ajustes ---------- */
+.cards{max-width:820px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-bottom:30px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.card h2{font-size:18px;margin:0 0 10px}
+.card p{margin:6px 0 12px;line-height:1.45}
+.field{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap;font-size:16px}
+.field label{flex:1;min-width:220px}
+.field input[type=range]{width:240px}
+.field select{font-size:16px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#fff}
+.field input[type=checkbox]{width:24px;height:24px}
+textarea{width:100%;min-height:90px;font-family:ui-monospace,monospace;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:10px}
+ol{padding-left:22px;line-height:1.6;margin:6px 0}
+
+/* ---------- Modal y aviso ---------- */
+.modal{position:fixed;inset:0;background:rgba(20,24,28,.4);display:none;align-items:center;justify-content:center;z-index:20;padding:20px}
+.modal.show{display:flex}
+.modal .box{background:#fff;border-radius:16px;padding:20px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.modal .box p{font-size:17px;line-height:1.45;margin:0 0 16px}
+.modal .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:#1f2933;color:#fff;
+  padding:12px 18px;border-radius:12px;font-size:16px;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.banner{background:var(--warn-soft);color:var(--warn);padding:8px 16px;font-size:14px;display:none}
+.banner.show{display:block}
+
+/* ---------- Notas ---------- */
+.notebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.grow{flex:1}
+.btn.sm{min-height:42px;padding:6px 12px;font-size:15px}
+.side{overflow-y:auto}
+.notes{display:flex;flex-direction:column;gap:10px}
+.note{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.note.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.note .nt{flex:1;min-width:0;cursor:pointer}
+.note .np{font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.3;white-space:pre-wrap;word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note .nd{font-size:13px;color:var(--muted);margin-top:6px}
+.note .na{display:flex;flex-direction:column;gap:6px}
+.note .na .btn{min-height:42px;font-size:15px;padding:6px 12px}
+
+/* ---------- Tabla ---------- */
+.cards.wide{max-width:1100px}
+.field input[type=text]{font-size:17px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;min-width:240px}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+.sheet h3{font-family:Arial,Helvetica,sans-serif;font-size:28px;margin:0 0 4px}
+.sheet .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cell{border:2px solid #dcd7cb;border-radius:12px;overflow:hidden;break-inside:avoid}
+.cell .cl{background:#eef5f2;font-family:Arial,Helvetica,sans-serif;font-size:34px;text-align:center;padding:6px 0;border-bottom:2px solid #dcd7cb}
+.cell .cd{display:flex;justify-content:center;gap:4px;padding:6px}
+.cell .cd canvas{flex:1 1 0;min-width:0;width:auto;max-width:120px;aspect-ratio:1/1;height:auto}
+.empty-sheet{color:var(--muted);text-align:center;padding:30px;font-size:17px}
+@media print{
+  header,.banner,.toast,.modal,#v-table .card{display:none!important}
+  html,body{height:auto;overflow:visible;display:block;background:#fff}
+  main{display:block}
+  .view{display:none!important}
+  #v-table{display:block!important;overflow:visible;padding:0}
+  .sheet{border:0;padding:0}
+}
+
+@media (orientation:portrait){
+  .work{flex-direction:column}
+  .side{width:auto;flex-direction:row;flex-wrap:wrap}
+  .side .btn{flex:1;width:auto;min-width:140px}
+  #v-teach{flex-direction:column}
+  .teach-left{width:auto;max-height:38vh}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mi letra → <span>Arial</span></h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="write" aria-selected="true">✍️ Escribir</button>
+    <button class="tab" role="tab" data-view="notes" aria-selected="false">📝 Notas</button>
+    <button class="tab" role="tab" data-view="teach" aria-selected="false">🎓 Enseñar letras</button>
+    <button class="tab" role="tab" data-view="table" aria-selected="false">📖 Su abecedario</button>
+    <button class="tab" role="tab" data-view="settings" aria-selected="false">⚙️ Ajustes y respaldo</button>
+  </nav>
+</header>
+<div class="banner" id="storageBanner">Este navegador no permite guardar datos. Las letras enseñadas se perderán al cerrar: usa “Copiar respaldo” en Ajustes.</div>
+
+<main>
+  <!-- ESCRIBIR -->
+  <section class="view col active" id="v-write">
+    <div class="notebar">
+      <span class="muted small" id="noteStatus"></span>
+      <span class="grow"></span>
+      <button class="btn sm" id="wNewNote">＋ Nueva nota</button>
+      <button class="btn sm" id="wNotes">📝 Ver notas</button>
+      <button class="btn sm" id="wCopy">📋 Copiar texto</button>
+    </div>
+    <div class="output-wrap">
+      <div class="output" id="output" aria-live="polite"></div>
+      <div class="out-tools">
+        <button class="btn" id="sizeUp" title="Letra más grande">A+</button>
+        <button class="btn" id="sizeDown" title="Letra más pequeña">A−</button>
+        <button class="btn" id="caseBtn" title="Mayúsculas o minúsculas">abc</button>
+      </div>
+    </div>
+    <div class="chips-row">
+      <span class="muted small" id="chipsLabel">Toca una letra del texto para ver otras opciones.</span>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="work">
+      <div class="pad-wrap">
+        <div class="pad-top">
+          <div class="seg" id="modeSeg">
+            <button data-mode="letter" aria-pressed="true">Letra por letra</button>
+            <button data-mode="word" aria-pressed="false">Palabra completa</button>
+          </div>
+          <span class="muted small" id="padHint"></span>
+        </div>
+        <div class="pad" id="writeBox">
+          <div class="pad-empty" id="writeEmpty">Dibuja aquí</div>
+          <canvas id="writePad"></canvas>
+          <div class="pad-overlay" id="noData">
+            <div>Todavía no hay letras enseñadas.<br>Primero hay que enseñarle a la página cómo escribe ella cada letra.</div>
+            <button class="btn primary" id="goTeach">Ir a “Enseñar letras”</button>
+          </div>
+        </div>
+      </div>
+      <div class="side">
+        <button class="btn primary big" id="wDone">✓ Listo</button>
+        <button class="btn" id="wSpace">␣ Espacio</button>
+        <button class="btn" id="wNewline">↵ Nueva línea</button>
+        <button class="btn" id="wBack">⌫ Borrar letra</button>
+        <button class="btn" id="wUndo">↶ Borrar trazo</button>
+        <button class="btn danger" id="wClear">Borrar todo el texto</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTAS -->
+  <section class="view col scroll" id="v-notes">
+    <div class="cards wide">
+      <div class="card">
+        <h2>Notas</h2>
+        <p class="muted">Todo lo que se escribe en “Escribir” se guarda solo como nota en este dispositivo. Toca una nota para seguir escribiéndola.</p>
+        <div class="row">
+          <button class="btn primary" id="nNew">＋ Nueva nota</button>
+          <button class="btn" id="nTxt">⬇️ Descargar todas (.txt)</button>
+        </div>
+      </div>
+      <div class="notes" id="notesList"></div>
+    </div>
+  </section>
+
+  <!-- ENSEÑAR -->
+  <section class="view" id="v-teach">
+    <div class="teach-left">
+      <div class="progress" id="progress"></div>
+      <div class="grid" id="letterGrid"></div>
+      <div class="add-row">
+        <input id="newLabel" maxlength="2" placeholder="Otro símbolo (á, ?, .)" autocomplete="off">
+        <button class="btn" id="addLabel">Agregar</button>
+      </div>
+    </div>
+    <div class="teach-right">
+      <div class="teach-head">
+        <div class="target-letter" id="targetLetter">A a</div>
+        <div>
+          <div style="font-size:17px;margin-bottom:4px">Pídele que dibuje esta letra <b>a su manera</b>, como la escribe siempre.</div>
+          <div class="muted small" id="targetCount"></div>
+        </div>
+      </div>
+      <div class="pad" id="teachBox">
+        <div class="pad-empty">Dibuja aquí la letra</div>
+        <canvas id="teachPad"></canvas>
+      </div>
+      <div class="row">
+        <button class="btn" id="tUndo">↶ Borrar trazo</button>
+        <button class="btn" id="tClear">Limpiar</button>
+        <button class="btn primary" id="tSave">Guardar ejemplo</button>
+        <button class="btn" id="tNext">Siguiente letra →</button>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+  </section>
+
+  <!-- TABLA -->
+  <section class="view col scroll" id="v-table">
+    <div class="cards wide">
+      <div class="card">
+        <h2>Tabla de su abecedario</h2>
+        <p class="muted">Muestra cómo dibuja ella cada letra, junto a la letra en Arial. Sirve como “diccionario” para que docentes y evaluadores puedan leer su letra, incluso sin la tablet. Se eligen automáticamente sus dibujos más típicos de cada letra.</p>
+        <div class="field">
+          <label for="tblName">Nombre para el título (opcional)</label>
+          <input type="text" id="tblName" maxlength="40" placeholder="Ej.: Sofía" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="tblPer">Dibujos de ella por cada letra</label>
+          <select id="tblPer"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="tblPng">🖼️ Guardar como imagen</button>
+          <button class="btn" id="tblPrint">🖨️ Imprimir</button>
+        </div>
+        <p class="muted small" id="tblMissing" style="margin-bottom:0"></p>
+      </div>
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="view col scroll" id="v-settings">
+    <div class="cards">
+      <div class="card">
+        <h2>Cómo usar</h2>
+        <ol>
+          <li><b>Enseñar letras:</b> elige una letra, ella la dibuja con el dedo y un adulto toca “Guardar ejemplo”. Lo ideal es guardar 5 ejemplos o más de cada letra, dibujados en distintos momentos.</li>
+          <li><b>Escribir:</b> en “Letra por letra”, ella dibuja una letra, hace una pausa y la letra aparece en Arial. En “Palabra completa” escribe la palabra en una sola línea, dejando un poco de espacio entre letras, y toca “✓ Listo”.</li>
+          <li>Si alguna letra sale mal, toca esa letra en el texto y elige la correcta en las opciones. La página aprende de esa corrección.</li>
+          <li><b>Notas:</b> lo que escribe se guarda solo como nota. En “📝 Notas” se ven todas, se abren para seguir escribiendo, se copian o se borran.</li>
+          <li>Las letras enseñadas y las notas se guardan solo en este dispositivo. Haz un respaldo de vez en cuando.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Reconocimiento</h2>
+        <div class="field">
+          <label for="pause">Espera antes de convertir (modo letra por letra): <b id="pauseVal"></b></label>
+          <input type="range" id="pause" min="300" max="2500" step="100">
+        </div>
+        <div class="field">
+          <label for="learn">Aprender de las correcciones (guarda el dibujo con la letra correcta)</label>
+          <input type="checkbox" id="learn">
+        </div>
+        <div class="field">
+          <label for="target">Ejemplos recomendados por letra</label>
+          <select id="target"><option>3</option><option>5</option><option>8</option><option>10</option></select>
+        </div>
+        <div class="field">
+          <label for="autoNext">Pasar sola a la siguiente letra al llegar a ese número</label>
+          <input type="checkbox" id="autoNext">
+        </div>
+      </div>
+      <div class="card">
+        <h2>Texto</h2>
+        <div class="field">
+          <label for="caseSel">Cómo mostrar las letras</label>
+          <select id="caseSel">
+            <option value="lower">minúsculas</option>
+            <option value="upper">MAYÚSCULAS</option>
+            <option value="sentence">Primera letra en mayúscula</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fontSize">Tamaño del texto: <b id="fontVal"></b></label>
+          <input type="range" id="fontSize" min="24" max="96" step="4">
+        </div>
+      </div>
+      <div class="card">
+        <h2>Respaldo de las letras enseñadas y las notas</h2>
+        <p class="muted">Sirve para no perder el entrenamiento ni las notas si se borra el navegador, o para pasarlos a otro dispositivo. El archivo contiene sus notas: guárdalo en un lugar seguro.</p>
+        <div class="row">
+          <button class="btn" id="bDownload">⬇️ Descargar respaldo</button>
+          <button class="btn" id="bCopy">📋 Copiar respaldo</button>
+          <button class="btn" id="bFile">📂 Abrir archivo de respaldo</button>
+          <input type="file" id="fileIn" accept=".json,.txt,application/json,text/plain" hidden>
+        </div>
+        <p class="muted small" style="margin-top:14px">O pega aquí un respaldo copiado:</p>
+        <textarea id="pasteIn" placeholder='{"app":"mi-letra", ...}'></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn" id="bPaste">Cargar respaldo pegado</button></div>
+      </div>
+      <div class="card">
+        <h2>Borrar</h2>
+        <p class="muted">Elimina todas las letras enseñadas de este dispositivo. No se puede deshacer.</p>
+        <button class="btn danger" id="bWipe">Borrar todas las letras enseñadas</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal"><div class="box"><p id="modalMsg"></p><div class="acts" id="modalActs"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =================== Datos y almacenamiento =================== */
+const KEY = "mi-letra-v1";
+const DEFAULT_LABELS = "abcdefghijklmnñopqrstuvwxyz0123456789".split("");
+const DEFAULT_SETTINGS = {pauseMs:900, learn:true, target:5, autoNext:true, caseMode:"lower", fontSize:44, mode:"letter", childName:"", tblPer:2};
+
+let state = {labels: DEFAULT_LABELS.slice(), samples: [], notes: [], currentNoteId: null, settings: Object.assign({}, DEFAULT_SETTINGS)};
+let storageOK = true;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ applyData(JSON.parse(raw), false); }
+  }catch(e){ storageOK = false; }
+  try{ localStorage.setItem(KEY+"-test","1"); localStorage.removeItem(KEY+"-test"); }catch(e){ storageOK = false; }
+  if(!storageOK) document.getElementById("storageBanner").classList.add("show");
+}
+function save(){
+  if(!storageOK) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(exportObj())); }
+  catch(e){ storageOK = false; document.getElementById("storageBanner").classList.add("show"); }
+}
+function exportObj(){
+  return {app:"mi-letra", version:1, savedAt:new Date().toISOString(),
+    labels: state.labels, settings: state.settings,
+    samples: state.samples.map(s => ({label:s.label, strokes:s.strokes})),
+    notes: state.notes, currentNoteId: state.currentNoteId};
+}
+let nextId = 1;
+function makeSample(label, strokes){
+  const clean = strokes.map(st => st.map(p => [Math.round(p[0]*10)/10, Math.round(p[1]*10)/10]));
+  return {id: nextId++, label, strokes: clean, _cloud: null};
+}
+function cleanNotes(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.filter(n => n && typeof n.text === "string" && n.text.trim() && typeof n.id === "string")
+    .map(n => ({id:n.id, text:n.text, created:+n.created || Date.now(), updated:+n.updated || +n.created || Date.now()}));
+}
+function validData(obj){
+  return obj && Array.isArray(obj.samples) && obj.samples.every(s =>
+    s && typeof s.label === "string" && Array.isArray(s.strokes) &&
+    s.strokes.every(st => Array.isArray(st) && st.every(p => Array.isArray(p) && p.length >= 2 && isFinite(p[0]) && isFinite(p[1]))));
+}
+function applyData(obj, merge){
+  if(!validData(obj)) throw new Error("formato");
+  const incoming = obj.samples.filter(s => s.strokes.length).map(s => makeSample(s.label, s.strokes));
+  if(merge){ state.samples = state.samples.concat(incoming); }
+  else { state.samples = incoming; }
+  const labels = merge ? state.labels.slice() : DEFAULT_LABELS.slice();
+  (Array.isArray(obj.labels) ? obj.labels : []).concat(incoming.map(s => s.label)).forEach(l => {
+    if(typeof l === "string" && l && !labels.includes(l)) labels.push(l);
+  });
+  state.labels = labels;
+  if(!merge && obj.settings && typeof obj.settings === "object"){
+    state.settings = Object.assign({}, DEFAULT_SETTINGS, obj.settings);
+  }
+  const notes = cleanNotes(obj.notes);
+  if(merge){
+    const have = new Set(state.notes.map(n => n.id));
+    notes.forEach(n => { if(!have.has(n.id)) state.notes.push(n); });
+  } else {
+    state.notes = notes;
+    state.currentNoteId = (typeof obj.currentNoteId === "string" && notes.some(n => n.id === obj.currentNoteId)) ? obj.currentNoteId : null;
+  }
+}
+function countFor(label){ let n = 0; for(const s of state.samples) if(s.label === label) n++; return n; }
+
+/* =================== Reconocedor ($P point-cloud) =================== */
+const N = 32;
+function toPoints(strokes){
+  const pts = [];
+  strokes.forEach((st, id) => {
+    if(st.length === 1){ pts.push({x:st[0][0], y:st[0][1], id}); pts.push({x:st[0][0]+0.5, y:st[0][1]+0.5, id}); }
+    else st.forEach(p => pts.push({x:p[0], y:p[1], id}));
+  });
+  return pts;
+}
+function pathLength(pts){
+  let d = 0;
+  for(let i=1;i<pts.length;i++) if(pts[i].id === pts[i-1].id) d += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+  return d;
+}
+function resample(input, n){
+  const pts = input.map(p => ({x:p.x, y:p.y, id:p.id}));
+  const I = pathLength(pts) / (n-1);
+  if(!(I > 0)) return Array.from({length:n}, () => ({x:pts[0].x, y:pts[0].y, id:0}));
+  let D = 0;
+  const out = [{x:pts[0].x, y:pts[0].y, id:pts[0].id}];
+  for(let i=1;i<pts.length && out.length<n;i++){
+    if(pts[i].id !== pts[i-1].id) continue;
+    const d = Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+    if(D + d >= I && d > 0){
+      const t = (I - D) / d;
+      const q = {x: pts[i-1].x + t*(pts[i].x-pts[i-1].x), y: pts[i-1].y + t*(pts[i].y-pts[i-1].y), id: pts[i].id};
+      out.push(q); pts.splice(i, 0, q); D = 0;
+    } else D += d;
+  }
+  const last = pts[pts.length-1];
+  while(out.length < n) out.push({x:last.x, y:last.y, id:last.id});
+  return out;
+}
+function normalize(pts){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const p of pts){ minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); }
+  const size = Math.max(maxX-minX, maxY-minY) || 1;
+  let cx=0, cy=0;
+  const s = pts.map(p => ({x:(p.x-minX)/size, y:(p.y-minY)/size}));
+  for(const p of s){ cx+=p.x; cy+=p.y; }
+  cx/=s.length; cy/=s.length;
+  return s.map(p => ({x:p.x-cx, y:p.y-cy}));
+}
+function cloudOf(strokes){ return normalize(resample(toPoints(strokes), N)); }
+function sampleCloud(s){ if(!s._cloud) s._cloud = cloudOf(s.strokes); return s._cloud; }
+function cloudDistance(a, b, start, best){
+  const n = a.length, matched = new Uint8Array(n);
+  let sum = 0, i = start, w = n;
+  do{
+    let idx = -1, m = Infinity;
+    for(let j=0;j<n;j++){
+      if(matched[j]) continue;
+      const dx = a[i].x-b[j].x, dy = a[i].y-b[j].y, d = dx*dx+dy*dy;
+      if(d < m){ m = d; idx = j; }
+    }
+    matched[idx] = 1;
+    sum += (w/n) * Math.sqrt(m);
+    if(sum >= best) return sum;
+    w--; i = (i+1) % n;
+  } while(i !== start);
+  return sum;
+}
+function greedyMatch(a, b){
+  const step = Math.max(1, Math.floor(Math.sqrt(N)));
+  let best = Infinity;
+  for(let i=0;i<N;i+=step){
+    best = Math.min(best, cloudDistance(a, b, i, best));
+    best = Math.min(best, cloudDistance(b, a, i, best));
+  }
+  return best;
+}
+function classify(strokes){
+  const c = cloudOf(strokes);
+  const best = new Map();
+  for(const s of state.samples){
+    const d = greedyMatch(c, sampleCloud(s));
+    if(!best.has(s.label) || d < best.get(s.label)) best.set(s.label, d);
+  }
+  return [...best.entries()].sort((x,y) => x[1]-y[1]).map(e => e[0]);
+}
+
+/* Separar una palabra escrita de corrido en letras (por posición horizontal) */
+function bbox(st){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const p of st){ minX=Math.min(minX,p[0]); minY=Math.min(minY,p[1]); maxX=Math.max(maxX,p[0]); maxY=Math.max(maxY,p[1]); }
+  return {minX,minY,maxX,maxY};
+}
+function segment(strokes){
+  if(!strokes.length) return [];
+  const items = strokes.map((st,i) => Object.assign({i}, bbox(st)));
+  const allMinY = Math.min(...items.map(b=>b.minY)), allMaxY = Math.max(...items.map(b=>b.maxY));
+  const H = Math.max(allMaxY - allMinY, 20);
+  const tol = 0.02 * H;
+  items.sort((a,b) => a.minX - b.minX);
+  const groups = [];
+  for(const it of items){
+    const g = groups[groups.length-1];
+    const cx = (it.minX + it.maxX)/2;
+    const narrow = (it.maxX - it.minX) < 0.18*H;
+    if(g && (it.minX <= g.maxX + tol || (narrow && cx <= g.maxX + 0.05*H))){
+      g.idx.push(it.i); g.minX = Math.min(g.minX,it.minX); g.maxX = Math.max(g.maxX,it.maxX);
+    } else groups.push({idx:[it.i], minX:it.minX, maxX:it.maxX});
+  }
+  const out = [];
+  groups.forEach((g, k) => {
+    if(k > 0 && g.minX - groups[k-1].maxX > 0.55*H) out.push({space:true});
+    out.push({strokes: g.idx.sort((a,b)=>a-b).map(i => strokes[i])});
+  });
+  return out;
+}
+
+/* =================== Lienzo de dibujo =================== */
+class Pad{
+  constructor(canvas, opts){
+    this.c = canvas; this.ctx = canvas.getContext("2d"); this.opts = opts || {};
+    this.strokes = []; this.cur = null; this.pid = null; this.timer = null;
+    this.empty = canvas.parentElement.querySelector(".pad-empty");
+    const ro = new ResizeObserver(() => this.resize()); ro.observe(canvas.parentElement);
+    canvas.addEventListener("pointerdown", e => this.down(e));
+    canvas.addEventListener("pointermove", e => this.move(e));
+    canvas.addEventListener("pointerup", e => this.up(e));
+    canvas.addEventListener("pointercancel", e => this.up(e));
+    canvas.addEventListener("contextmenu", e => e.preventDefault());
+  }
+  pos(e){ const r = this.c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+  resize(){
+    const r = this.c.parentElement.getBoundingClientRect();
+    if(!r.width || !r.height) return;
+    const dpr = window.devicePixelRatio || 1;
+    this.c.width = Math.round(r.width*dpr); this.c.height = Math.round(r.height*dpr);
+    this.c.style.width = r.width+"px"; this.c.style.height = r.height+"px";
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.lw = Math.max(5, Math.min(r.width, r.height) / 55);
+    this.redraw();
+  }
+  style(){ const x = this.ctx; x.lineCap = "round"; x.lineJoin = "round"; x.lineWidth = this.lw || 7; x.strokeStyle = "#1f2933"; x.fillStyle = "#1f2933"; }
+  redraw(){
+    const x = this.ctx, w = this.c.width, h = this.c.height;
+    x.save(); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,w,h); x.restore();
+    this.style();
+    for(const st of this.strokes){
+      if(st.length === 1){ x.beginPath(); x.arc(st[0][0], st[0][1], (this.lw||7)/2, 0, Math.PI*2); x.fill(); continue; }
+      x.beginPath(); x.moveTo(st[0][0], st[0][1]);
+      for(let i=1;i<st.length;i++) x.lineTo(st[i][0], st[i][1]);
+      x.stroke();
+    }
+    if(this.empty) this.empty.style.display = this.strokes.length ? "none" : "flex";
+  }
+  down(e){
+    if(this.pid !== null) return;
+    e.preventDefault();
+    try{ this.c.setPointerCapture(e.pointerId); }catch(_){}
+    this.pid = e.pointerId; clearTimeout(this.timer);
+    this.cur = [this.pos(e)]; this.strokes.push(this.cur);
+    this.redraw();
+    if(this.opts.onChange) this.opts.onChange();
+  }
+  move(e){
+    if(e.pointerId !== this.pid || !this.cur) return;
+    e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    const x = this.ctx; this.style();
+    for(const ev of (evs.length ? evs : [e])){
+      const p = this.pos(ev), last = this.cur[this.cur.length-1];
+      if(Math.hypot(p[0]-last[0], p[1]-last[1]) < 1.5) continue;
+      this.cur.push(p);
+      x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke();
+    }
+  }
+  up(e){
+    if(e.pointerId !== this.pid) return;
+    this.pid = null; this.cur = null;
+    if(this.opts.onIdle){
+      const ms = this.opts.idleMs ? this.opts.idleMs() : 900;
+      if(ms !== null) this.timer = setTimeout(() => { if(this.pid === null && this.strokes.length) this.opts.onIdle(); }, ms);
+    }
+  }
+  clear(){ clearTimeout(this.timer); this.strokes = []; this.cur = null; this.redraw(); }
+  undo(){ clearTimeout(this.timer); this.strokes.pop(); this.redraw(); }
+  take(){ const s = this.strokes; this.clear(); return s; }
+}
+
+/* =================== Utilidades de interfaz =================== */
+const $ = id => document.getElementById(id);
+let toastT = null;
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+function ask(msg, actions){
+  return new Promise(res => {
+    $("modalMsg").textContent = msg;
+    const acts = $("modalActs"); acts.innerHTML = "";
+    actions.forEach(a => {
+      const b = document.createElement("button");
+      b.className = "btn" + (a.cls ? " "+a.cls : ""); b.textContent = a.label;
+      b.onclick = () => { $("modal").classList.remove("show"); res(a.value); };
+      acts.appendChild(b);
+    });
+    $("modal").classList.add("show");
+  });
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    try{
+      const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+    }catch(e2){ return false; }
+  }
+}
+function upperLabel(l){ return l.toUpperCase(); }
+function showLabel(l){ const u = l.toUpperCase(); return u !== l ? u + " " + l : l; }
+
+/* =================== Pestañas =================== */
+const pads = {};
+function showView(name){
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === name ? "true" : "false"));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "v-"+name));
+  if(name === "write"){ refreshWrite(); requestAnimationFrame(() => pads.write.resize()); }
+  if(name === "teach"){ refreshTeach(); requestAnimationFrame(() => pads.teach.resize()); }
+  if(name === "settings") refreshSettings();
+  if(name === "table") refreshTable();
+  if(name === "notes") refreshNotes();
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showView(t.dataset.view)));
+
+/* =================== ESCRIBIR =================== */
+let text = [];      // letras escritas
+let meta = [];      // por letra: {ranking, strokes, sampleId} o null
+let selIdx = -1;
+let popIdx = -1;
+
+function cased(arr){
+  const mode = state.settings.caseMode;
+  let cap = true;
+  return arr.map(ch => {
+    let out;
+    if(mode === "upper") out = ch.toUpperCase();
+    else if(mode === "lower") out = ch.toLowerCase();
+    else{
+      const isL = /\p{L}/u.test(ch);
+      out = (cap && isL) ? ch.toUpperCase() : ch.toLowerCase();
+      if(isL || /\d/.test(ch)) cap = false;
+      if(/[.!?]/.test(ch)) cap = true;
+    }
+    return out;
+  });
+}
+function renderOutput(){
+  const o = $("output");
+  o.style.fontSize = state.settings.fontSize + "px";
+  o.innerHTML = "";
+  if(!text.length){
+    const ph = document.createElement("span"); ph.className = "placeholder"; ph.textContent = "Aquí aparecerá el texto en Arial";
+    o.appendChild(ph);
+  }
+  const shown = cased(text);
+  shown.forEach((ch, i) => {
+    const s = document.createElement("span");
+    s.className = "ch" + (i === selIdx ? " sel" : "") + (i === popIdx ? " pop" : "");
+    s.textContent = ch;
+    s.addEventListener("click", () => { if(meta[i]){ selIdx = i; renderOutput(); renderChips(); } });
+    o.appendChild(s);
+  });
+  const c = document.createElement("span"); c.className = "caret"; o.appendChild(c);
+  o.scrollTop = o.scrollHeight;
+  popIdx = -1;
+  const labels = {lower:"abc", upper:"ABC", sentence:"Abc"};
+  $("caseBtn").textContent = labels[state.settings.caseMode] || "abc";
+}
+function renderChips(){
+  const box = $("chips"); box.innerHTML = "";
+  const m = meta[selIdx];
+  if(selIdx < 0 || !m){ $("chipsLabel").textContent = text.length ? "Toca una letra del texto para ver otras opciones." : ""; return; }
+  $("chipsLabel").textContent = "¿Era otra letra? Toca la correcta:";
+  m.ranking.slice(0, 5).forEach(l => {
+    const b = document.createElement("button");
+    b.className = "chip" + (l === text[selIdx] ? " cur" : "");
+    b.textContent = cased([l])[0];
+    b.addEventListener("click", () => correct(selIdx, l));
+    box.appendChild(b);
+  });
+}
+function correct(i, label){
+  const m = meta[i]; if(!m || text[i] === label) return;
+  text[i] = label;
+  if(state.settings.learn){
+    if(m.sampleId){
+      const s = state.samples.find(x => x.id === m.sampleId);
+      if(s){ s.label = label; }
+      else { const ns = makeSample(label, m.strokes); state.samples.push(ns); m.sampleId = ns.id; }
+    } else { const ns = makeSample(label, m.strokes); state.samples.push(ns); m.sampleId = ns.id; }
+    save();
+  }
+  changed();
+}
+function append(label, m){
+  text.push(label); meta.push(m || null);
+  popIdx = text.length - 1;
+  selIdx = m ? text.length - 1 : -1;
+}
+function recognizeNow(){
+  const pad = pads.write;
+  if(!pad.strokes.length) return;
+  if(!state.samples.length){ toast("Primero enseña algunas letras."); return; }
+  const strokes = pad.take();
+  if(state.settings.mode === "word"){
+    for(const part of segment(strokes)){
+      if(part.space){ append(" ", null); continue; }
+      const r = classify(part.strokes);
+      append(r[0], {ranking:r, strokes:part.strokes, sampleId:null});
+    }
+  } else {
+    const r = classify(strokes);
+    append(r[0], {ranking:r, strokes, sampleId:null});
+  }
+  changed();
+}
+function refreshWrite(){
+  $("noData").classList.toggle("show", state.samples.length === 0);
+  const word = state.settings.mode === "word";
+  document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === state.settings.mode ? "true" : "false"));
+  $("padHint").textContent = word
+    ? "Escribe la palabra en una línea, con un poco de espacio entre letras, y toca ✓ Listo."
+    : "Dibuja una letra. Al hacer una pausa, se convierte sola.";
+  $("writeEmpty").textContent = word ? "Escribe aquí la palabra" : "Dibuja aquí una letra";
+  renderOutput(); renderChips();
+}
+pads.write = new Pad($("writePad"), {
+  idleMs: () => state.settings.mode === "letter" ? state.settings.pauseMs : null,
+  onIdle: () => { if(state.settings.mode === "letter") recognizeNow(); }
+});
+$("wDone").onclick = recognizeNow;
+$("wSpace").onclick = () => { if(pads.write.strokes.length) recognizeNow(); append(" ", null); selIdx = -1; changed(); };
+$("wNewline").onclick = () => { if(pads.write.strokes.length) recognizeNow(); append("\n", null); selIdx = -1; changed(); };
+$("wBack").onclick = () => {
+  if(pads.write.strokes.length){ pads.write.clear(); return; }
+  text.pop(); meta.pop(); selIdx = -1; changed();
+};
+$("wUndo").onclick = () => pads.write.undo();
+$("wCopy").onclick = async () => {
+  const ok = await copyText(cased(text).join(""));
+  toast(ok ? "Texto copiado. Ya puedes pegarlo donde lo necesites." : "No se pudo copiar automáticamente.");
+};
+$("wClear").onclick = async () => {
+  if(!text.length && !pads.write.strokes.length) return;
+  const ok = await ask("¿Borrar todo el texto? Esta nota se eliminará. (Las letras enseñadas no se borran.)", [{label:"Cancelar", value:false}, {label:"Borrar texto", value:true, cls:"danger"}]);
+  if(ok){ text = []; meta = []; selIdx = -1; pads.write.clear(); changed(); }
+};
+$("sizeUp").onclick = () => { state.settings.fontSize = Math.min(96, state.settings.fontSize + 4); save(); renderOutput(); };
+$("sizeDown").onclick = () => { state.settings.fontSize = Math.max(24, state.settings.fontSize - 4); save(); renderOutput(); };
+$("caseBtn").onclick = () => {
+  const order = ["lower","upper","sentence"];
+  state.settings.caseMode = order[(order.indexOf(state.settings.caseMode)+1) % order.length];
+  save(); renderOutput(); renderChips();
+};
+document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => {
+  if(pads.write.strokes.length) recognizeNow();
+  state.settings.mode = b.dataset.mode; save(); refreshWrite();
+}));
+$("goTeach").onclick = () => showView("teach");
+
+/* =================== ENSEÑAR =================== */
+let current = state.labels[0];
+function refreshTeach(){
+  if(!state.labels.includes(current)) current = state.labels[0];
+  const target = +state.settings.target;
+  const grid = $("letterGrid"); grid.innerHTML = "";
+  let done = 0;
+  state.labels.forEach(l => {
+    const n = countFor(l);
+    if(n >= target) done++;
+    const b = document.createElement("button");
+    b.className = "lbtn" + (n >= target ? " ok" : n > 0 ? " some" : "") + (l === current ? " sel" : "");
+    b.innerHTML = '<span class="n"></span>';
+    b.querySelector(".n").textContent = n;
+    b.appendChild(document.createTextNode(upperLabel(l) !== l ? upperLabel(l) + l : l));
+    b.addEventListener("click", () => { current = l; pads.teach.clear(); refreshTeach(); });
+    grid.appendChild(b);
+  });
+  const pct = Math.round(100 * done / state.labels.length);
+  $("progress").innerHTML = "";
+  const p1 = document.createElement("div");
+  p1.innerHTML = "<b></b> de <b></b> letras con " + target + " ejemplos o más";
+  p1.querySelectorAll("b")[0].textContent = done; p1.querySelectorAll("b")[1].textContent = state.labels.length;
+  const bar = document.createElement("div"); bar.className = "bar"; bar.innerHTML = "<i></i>"; bar.firstChild.style.width = pct + "%";
+  $("progress").append(p1, bar);
+
+  $("targetLetter").textContent = showLabel(current);
+  const n = countFor(current);
+  $("targetCount").textContent = n === 0 ? "Aún no hay ejemplos de esta letra."
+    : n + (n === 1 ? " ejemplo guardado" : " ejemplos guardados") + (n < target ? " · faltan " + (target - n) : " · ¡suficientes!");
+  renderThumbs();
+}
+function renderThumbs(){
+  const box = $("thumbs"); box.innerHTML = "";
+  const list = state.samples.filter(s => s.label === current);
+  list.forEach(s => {
+    const d = document.createElement("div"); d.className = "thumb";
+    const c = document.createElement("canvas"); c.width = 140; c.height = 140;
+    drawThumb(c, s.strokes);
+    const x = document.createElement("button"); x.textContent = "✕"; x.title = "Borrar este ejemplo";
+    x.onclick = async () => {
+      const ok = await ask("¿Borrar este ejemplo de la letra “" + current + "”?", [{label:"Cancelar", value:false}, {label:"Borrar", value:true, cls:"danger"}]);
+      if(ok){ state.samples = state.samples.filter(z => z.id !== s.id); save(); refreshTeach(); }
+    };
+    d.append(c, x); box.appendChild(d);
+  });
+  if(!DEFAULT_LABELS.includes(current) && list.length === 0){
+    const b = document.createElement("button"); b.className = "btn danger"; b.textContent = "Quitar el símbolo “" + current + "”";
+    b.onclick = () => { state.labels = state.labels.filter(l => l !== current); current = state.labels[0]; save(); refreshTeach(); };
+    box.appendChild(b);
+  }
+}
+function drawStrokesIn(x, strokes, bx, by, bw, bh, lw){
+  const pts = strokes.flat();
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const p of pts){ minX=Math.min(minX,p[0]); minY=Math.min(minY,p[1]); maxX=Math.max(maxX,p[0]); maxY=Math.max(maxY,p[1]); }
+  const size = Math.max(maxX-minX, maxY-minY) || 1, k = Math.min(bw, bh) / size;
+  const ox = bx + (bw - (maxX-minX)*k)/2, oy = by + (bh - (maxY-minY)*k)/2;
+  x.save();
+  x.lineCap = "round"; x.lineJoin = "round"; x.lineWidth = lw; x.strokeStyle = "#1f2933"; x.fillStyle = "#1f2933";
+  for(const st of strokes){
+    if(st.length === 1){ x.beginPath(); x.arc(ox+(st[0][0]-minX)*k, oy+(st[0][1]-minY)*k, lw/2, 0, Math.PI*2); x.fill(); continue; }
+    x.beginPath(); x.moveTo(ox+(st[0][0]-minX)*k, oy+(st[0][1]-minY)*k);
+    for(let i=1;i<st.length;i++) x.lineTo(ox+(st[i][0]-minX)*k, oy+(st[i][1]-minY)*k);
+    x.stroke();
+  }
+  x.restore();
+}
+function drawThumb(c, strokes){
+  const pad = 18;
+  drawStrokesIn(c.getContext("2d"), strokes, pad, pad, c.width-2*pad, c.height-2*pad, 6);
+}
+function nextLabel(onlyMissing){
+  const target = +state.settings.target, L = state.labels, start = L.indexOf(current);
+  for(let k=1;k<=L.length;k++){
+    const l = L[(start + k) % L.length];
+    if(!onlyMissing || countFor(l) < target) return l;
+  }
+  return onlyMissing ? null : current;
+}
+pads.teach = new Pad($("teachPad"), {});
+$("tUndo").onclick = () => pads.teach.undo();
+$("tClear").onclick = () => pads.teach.clear();
+$("tSave").onclick = () => {
+  if(!pads.teach.strokes.length){ toast("Primero dibuja la letra en el recuadro."); return; }
+  state.samples.push(makeSample(current, pads.teach.take()));
+  save();
+  const n = countFor(current), target = +state.settings.target;
+  if(state.settings.autoNext && n >= target){
+    const nx = nextLabel(true);
+    if(nx){ toast("¡Listo con “" + current + "”! Ahora: " + showLabel(nx)); current = nx; }
+    else toast("¡Todas las letras tienen " + target + " ejemplos!");
+  } else toast("Ejemplo guardado (" + n + ")");
+  refreshTeach();
+};
+$("tNext").onclick = () => { current = nextLabel(false); pads.teach.clear(); refreshTeach(); };
+$("addLabel").onclick = () => {
+  const v = $("newLabel").value.trim();
+  if(!v){ toast("Escribe el símbolo que quieres agregar."); return; }
+  const l = v.toLowerCase();
+  if(!state.labels.includes(l)) state.labels.push(l);
+  current = l; $("newLabel").value = ""; save(); refreshTeach();
+};
+
+/* =================== AJUSTES =================== */
+function refreshSettings(){
+  const s = state.settings;
+  $("pause").value = s.pauseMs; $("pauseVal").textContent = (s.pauseMs/1000).toFixed(1) + " s";
+  $("learn").checked = !!s.learn; $("target").value = String(s.target); $("autoNext").checked = !!s.autoNext;
+  $("caseSel").value = s.caseMode; $("fontSize").value = s.fontSize; $("fontVal").textContent = s.fontSize + " px";
+}
+$("pause").oninput = e => { state.settings.pauseMs = +e.target.value; $("pauseVal").textContent = (state.settings.pauseMs/1000).toFixed(1) + " s"; save(); };
+$("learn").onchange = e => { state.settings.learn = e.target.checked; save(); };
+$("target").onchange = e => { state.settings.target = +e.target.value; save(); };
+$("autoNext").onchange = e => { state.settings.autoNext = e.target.checked; save(); };
+$("caseSel").onchange = e => { state.settings.caseMode = e.target.value; save(); };
+$("fontSize").oninput = e => { state.settings.fontSize = +e.target.value; $("fontVal").textContent = state.settings.fontSize + " px"; save(); };
+
+function backupName(){ const d = new Date(); return "mi-letra-respaldo-" + d.toISOString().slice(0,10) + ".json"; }
+async function saveFile(filename, data, mime){
+  try{
+    if(window.claude && typeof window.claude.use === "function"){
+      const dl = await window.claude.use("downloads");
+      if(dl){
+        try{ await dl.save({filename, data}); toast("Listo. Archivo guardado."); return true; }
+        catch(err){
+          const code = err && err.code;
+          if(code === "declined"){ toast("Descarga cancelada."); return false; }
+          if(code === "rate_limited"){ toast("Espera un momento e inténtalo otra vez."); return false; }
+          if(code !== "unavailable" && code !== "not_granted" && code !== "capability_disabled" && code !== "capability_removed"){
+            toast("No se pudo guardar el archivo."); return false;
+          }
+        }
+      }
+    }
+  }catch(e){}
+  try{
+    const blob = data instanceof Blob ? data : new Blob([data], {type: mime || "application/octet-stream"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast("Si no se descargó, revisa la carpeta Descargas.");
+    return true;
+  }catch(e){ toast("No se pudo guardar el archivo."); return false; }
+}
+$("bDownload").onclick = async () => {
+  if(!state.samples.length && !state.notes.length){ toast("Todavía no hay nada que respaldar."); return; }
+  await saveFile(backupName(), JSON.stringify(exportObj()), "application/json");
+};
+$("bCopy").onclick = async () => {
+  if(!state.samples.length && !state.notes.length){ toast("Todavía no hay nada que respaldar."); return; }
+  const ok = await copyText(JSON.stringify(exportObj()));
+  toast(ok ? "Respaldo copiado. Pégalo en una nota o correo para guardarlo." : "No se pudo copiar.");
+};
+async function importText(raw){
+  let obj;
+  try{ obj = JSON.parse(raw); if(!validData(obj)) throw 0; }
+  catch(e){ toast("Ese texto no parece un respaldo válido."); return; }
+  let mode = "replace";
+  if(state.samples.length || state.notes.length){
+    mode = await ask("Ya hay " + state.samples.length + " ejemplos y " + state.notes.length + " notas en este dispositivo. ¿Qué hago con el respaldo (" + obj.samples.length + " ejemplos, " + cleanNotes(obj.notes).length + " notas)?",
+      [{label:"Cancelar", value:null}, {label:"Sumar a lo que hay", value:"merge"}, {label:"Reemplazar todo", value:"replace", cls:"primary"}]);
+    if(!mode) return;
+  }
+  applyData(obj, mode === "merge"); save();
+  toast("Respaldo cargado: " + state.samples.length + " ejemplos y " + state.notes.length + " notas.");
+  currentNoteId = state.currentNoteId; const cn = state.notes.find(n => n.id === currentNoteId);
+  text = cn ? Array.from(cn.text) : []; meta = text.map(() => null); selIdx = -1;
+  refreshSettings(); refreshTeach(); refreshWrite(); updateNoteStatus();
+}
+$("bFile").onclick = () => $("fileIn").click();
+$("fileIn").onchange = e => {
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = () => importText(String(r.result)); r.readAsText(f);
+  e.target.value = "";
+};
+$("bPaste").onclick = () => { const v = $("pasteIn").value.trim(); if(v) importText(v).then(() => { $("pasteIn").value = ""; }); };
+$("bWipe").onclick = async () => {
+  if(!state.samples.length){ toast("No hay letras enseñadas."); return; }
+  const ok = await ask("¿Borrar las " + state.samples.length + " muestras de letras enseñadas? Si no tienes respaldo, habrá que enseñarlas de nuevo.",
+    [{label:"Cancelar", value:false}, {label:"Borrar todo", value:true, cls:"danger"}]);
+  if(ok){ state.samples = []; state.labels = DEFAULT_LABELS.slice(); save(); toast("Letras enseñadas borradas."); refreshTeach(); refreshWrite(); }
+};
+
+/* =================== NOTAS =================== */
+let currentNoteId = null;
+function noteTitle(t){
+  const line = cased(Array.from(t)).join("").trim().split("\n")[0].trim();
+  return line ? (line.length > 40 ? line.slice(0, 40) + "…" : line) : "(vacía)";
+}
+function fmtDate(ms){
+  try{ return new Date(ms).toLocaleString("es", {dateStyle:"medium", timeStyle:"short"}); }
+  catch(e){ return new Date(ms).toLocaleString(); }
+}
+function persistNote(){
+  const t = text.join("");
+  if(!t.trim()){
+    if(currentNoteId){ state.notes = state.notes.filter(n => n.id !== currentNoteId); currentNoteId = null; }
+  } else {
+    const now = Date.now();
+    let n = state.notes.find(x => x.id === currentNoteId);
+    if(!n){
+      n = {id: "n" + now.toString(36) + Math.random().toString(36).slice(2, 6), text: t, created: now, updated: now};
+      state.notes.unshift(n); currentNoteId = n.id;
+    } else { n.text = t; n.updated = now; }
+  }
+  state.currentNoteId = currentNoteId;
+  save();
+  updateNoteStatus();
+}
+function changed(){ persistNote(); renderOutput(); renderChips(); }
+function updateNoteStatus(){
+  const n = state.notes.find(x => x.id === currentNoteId);
+  $("noteStatus").textContent = n ? "Nota guardada ✓ · " + noteTitle(n.text) : "Nota nueva · se guarda sola al escribir";
+}
+function openNote(id){
+  if(pads.write.strokes.length) recognizeNow();
+  const n = state.notes.find(x => x.id === id); if(!n) return;
+  text = Array.from(n.text); meta = text.map(() => null); selIdx = -1;
+  currentNoteId = id; state.currentNoteId = id; save();
+  updateNoteStatus(); showView("write");
+}
+function newNote(){
+  if(pads.write.strokes.length) recognizeNow();
+  text = []; meta = []; selIdx = -1; currentNoteId = null; state.currentNoteId = null; save();
+  updateNoteStatus(); showView("write"); toast("Nota nueva lista para escribir.");
+}
+function refreshNotes(){
+  const box = $("notesList"); box.innerHTML = "";
+  const list = state.notes.slice().sort((a, b) => b.updated - a.updated);
+  if(!list.length){
+    const d = document.createElement("div"); d.className = "card muted";
+    d.textContent = "Todavía no hay notas. Lo que se escriba en “Escribir” aparecerá aquí.";
+    box.appendChild(d); return;
+  }
+  list.forEach(n => {
+    const el = document.createElement("div"); el.className = "note" + (n.id === currentNoteId ? " cur" : "");
+    const nt = document.createElement("div"); nt.className = "nt";
+    const np = document.createElement("div"); np.className = "np"; np.textContent = cased(Array.from(n.text)).join("");
+    const nd = document.createElement("div"); nd.className = "nd";
+    nd.textContent = (n.id === currentNoteId ? "Abierta ahora · " : "") + "Última vez: " + fmtDate(n.updated);
+    nt.append(np, nd); nt.onclick = () => openNote(n.id);
+    const na = document.createElement("div"); na.className = "na";
+    const bo = document.createElement("button"); bo.className = "btn primary"; bo.textContent = "Abrir"; bo.onclick = () => openNote(n.id);
+    const bc = document.createElement("button"); bc.className = "btn"; bc.textContent = "Copiar";
+    bc.onclick = async () => { const ok = await copyText(cased(Array.from(n.text)).join("")); toast(ok ? "Nota copiada." : "No se pudo copiar."); };
+    const bd = document.createElement("button"); bd.className = "btn danger"; bd.textContent = "Borrar";
+    bd.onclick = async () => {
+      const ok = await ask("¿Borrar la nota “" + noteTitle(n.text) + "”? No se puede deshacer.", [{label:"Cancelar", value:false}, {label:"Borrar", value:true, cls:"danger"}]);
+      if(!ok) return;
+      state.notes = state.notes.filter(x => x.id !== n.id);
+      if(n.id === currentNoteId){ currentNoteId = null; state.currentNoteId = null; text = []; meta = []; selIdx = -1; }
+      save(); refreshNotes(); updateNoteStatus();
+    };
+    na.append(bo, bc, bd); el.append(nt, na); box.appendChild(el);
+  });
+}
+$("wNewNote").onclick = newNote;
+$("nNew").onclick = newNote;
+$("wNotes").onclick = () => showView("notes");
+$("nTxt").onclick = async () => {
+  if(!state.notes.length){ toast("Todavía no hay notas."); return; }
+  const body = state.notes.slice().sort((a, b) => a.created - b.created)
+    .map(n => "=== " + fmtDate(n.created) + " ===\n" + cased(Array.from(n.text)).join("")).join("\n\n");
+  await saveFile("notas-" + new Date().toISOString().slice(0, 10) + ".txt", body, "text/plain");
+};
+
+/* =================== TABLA DEL ABECEDARIO =================== */
+const repCache = new Map();
+function representatives(label, k){
+  const list = state.samples.filter(s => s.label === label);
+  const key = label + "|" + k + "|" + list.map(s => s.id).join(",");
+  if(repCache.has(key)) return repCache.get(key);
+  let out = list;
+  if(list.length > k){
+    const sums = list.map(a => { let t = 0; for(const b of list) if(a !== b) t += greedyMatch(sampleCloud(a), sampleCloud(b)); return t; });
+    out = list.map((s,i) => [s, sums[i]]).sort((x,y) => x[1]-y[1]).slice(0, k).map(x => x[0]);
+  }
+  repCache.set(key, out);
+  return out;
+}
+function tableTitle(){
+  const n = (state.settings.childName || "").trim();
+  return n ? "Abecedario de " + n : "Abecedario personal";
+}
+function refreshTable(){
+  $("tblName").value = state.settings.childName || "";
+  $("tblPer").value = String(state.settings.tblPer || 2);
+  const per = +state.settings.tblPer || 2;
+  const taught = state.labels.filter(l => countFor(l) > 0);
+  const missing = state.labels.filter(l => countFor(l) === 0 && DEFAULT_LABELS.includes(l) && !/\d/.test(l));
+  $("tblMissing").textContent = missing.length ? "Letras que aún no tienen ejemplos (no aparecen en la tabla): " + missing.join(", ") : "";
+  const sh = $("sheet"); sh.innerHTML = "";
+  if(!taught.length){
+    const d = document.createElement("div"); d.className = "empty-sheet";
+    d.textContent = "Todavía no hay letras enseñadas. Cuando enseñes algunas en “Enseñar letras”, aparecerán aquí.";
+    sh.appendChild(d); return;
+  }
+  const h = document.createElement("h3"); h.textContent = tableTitle();
+  const sub = document.createElement("p"); sub.className = "sub"; sub.textContent = "Arriba: la letra en Arial. Abajo: cómo la escribe ella.";
+  const g = document.createElement("div"); g.className = "sgrid";
+  g.style.gridTemplateColumns = "repeat(auto-fill,minmax(" + (per === 1 ? 120 : per === 2 ? 170 : 230) + "px,1fr))";
+  taught.forEach(l => {
+    const cell = document.createElement("div"); cell.className = "cell";
+    const cl = document.createElement("div"); cl.className = "cl"; cl.textContent = showLabel(l);
+    const cd = document.createElement("div"); cd.className = "cd";
+    representatives(l, per).forEach(s => {
+      const c = document.createElement("canvas"); c.width = 200; c.height = 200;
+      drawStrokesIn(c.getContext("2d"), s.strokes, 22, 22, 156, 156, 8);
+      cd.appendChild(c);
+    });
+    cell.append(cl, cd); g.appendChild(cell);
+  });
+  sh.append(h, sub, g);
+}
+function roundRect(x, X, Y, w, h, r){
+  x.beginPath(); x.moveTo(X+r, Y); x.lineTo(X+w-r, Y); x.quadraticCurveTo(X+w, Y, X+w, Y+r);
+  x.lineTo(X+w, Y+h-r); x.quadraticCurveTo(X+w, Y+h, X+w-r, Y+h); x.lineTo(X+r, Y+h);
+  x.quadraticCurveTo(X, Y+h, X, Y+h-r); x.lineTo(X, Y+r); x.quadraticCurveTo(X, Y, X+r, Y); x.closePath();
+}
+function buildTableCanvas(){
+  const per = +state.settings.tblPer || 2;
+  const labels = state.labels.filter(l => countFor(l) > 0);
+  const W = 2000, M = 70, gap = 20, cols = per === 1 ? 7 : per === 2 ? 5 : 4;
+  const cw = (W - 2*M - gap*(cols-1)) / cols, letterH = 110, drawH = Math.min(230, (cw - 20) / per + 20), ch = letterH + drawH;
+  const rows = Math.ceil(labels.length / cols), top = 190;
+  const H = top + rows*(ch+gap) + 90;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#1f2933"; x.font = "bold 60px Arial, Helvetica, sans-serif"; x.textBaseline = "alphabetic";
+  x.fillText(tableTitle(), M, 100);
+  x.fillStyle = "#6b7280"; x.font = "30px Arial, Helvetica, sans-serif";
+  x.fillText("Arriba: la letra en Arial.  Abajo: cómo la escribe ella.", M, 150);
+  labels.forEach((l, i) => {
+    const cx = M + (i % cols) * (cw + gap), cy = top + Math.floor(i / cols) * (ch + gap);
+    x.save(); roundRect(x, cx, cy, cw, ch, 16); x.clip();
+    x.fillStyle = "#eef5f2"; x.fillRect(cx, cy, cw, letterH); x.restore();
+    x.strokeStyle = "#cfc9bb"; x.lineWidth = 3; roundRect(x, cx, cy, cw, ch, 16); x.stroke();
+    x.beginPath(); x.moveTo(cx, cy+letterH); x.lineTo(cx+cw, cy+letterH); x.stroke();
+    x.fillStyle = "#1f2933"; x.font = "64px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.fillText(showLabel(l), cx + cw/2, cy + letterH/2 + 3);
+    x.textAlign = "left"; x.textBaseline = "alphabetic";
+    const reps = representatives(l, per), slot = (cw - 20) / per;
+    reps.forEach((s, k) => {
+      const box = Math.min(slot, drawH) - 34;
+      drawStrokesIn(x, s.strokes, cx + 10 + k*slot + (slot - box)/2, cy + letterH + (drawH - box)/2, box, box, 9);
+    });
+  });
+  x.fillStyle = "#9ca3af"; x.font = "24px Arial, Helvetica, sans-serif";
+  x.fillText("Hecho con “Mi letra → Arial” · " + new Date().toLocaleDateString("es"), M, H - 40);
+  return c;
+}
+$("tblName").oninput = e => { state.settings.childName = e.target.value; save(); refreshTable(); };
+$("tblPer").onchange = e => { state.settings.tblPer = +e.target.value; save(); refreshTable(); };
+$("tblPng").onclick = () => {
+  if(!state.samples.length){ toast("Todavía no hay letras enseñadas."); return; }
+  const c = buildTableCanvas();
+  c.toBlob(async blob => {
+    if(!blob){ toast("No se pudo crear la imagen."); return; }
+    const name = ((state.settings.childName || "").trim() || "personal").replace(/[^\p{L}\p{N}]+/gu, "-");
+    await saveFile("abecedario-" + name + ".png", blob, "image/png");
+  }, "image/png");
+};
+$("tblPrint").onclick = () => {
+  if(!state.samples.length){ toast("Todavía no hay letras enseñadas."); return; }
+  let framed = true;
+  try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+  if(framed){ toast("Aquí no se puede imprimir directo: guarda la imagen e imprímela desde la galería."); return; }
+  window.print();
+};
+
+/* =================== Inicio =================== */
+load();
+current = state.labels[0];
+currentNoteId = state.currentNoteId;
+{ const cn = state.notes.find(n => n.id === currentNoteId); if(cn){ text = Array.from(cn.text); meta = text.map(() => null); } else currentNoteId = null; }
+updateNoteStatus();
+refreshWrite();
+
+/* Funcionar sin internet cuando la página está publicada en su propio sitio (por ejemplo, GitHub Pages) */
+try{
+  let isTop = false; try{ isTop = window.self === window.top; }catch(e){ isTop = false; }
+  if("serviceWorker" in navigator && location.protocol === "https:" && isTop && !/claude/.test(location.hostname)){
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+    if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  }
+}catch(e){}
+})();
+</script>
+</body>
+</html>
